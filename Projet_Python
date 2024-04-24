@@ -1,0 +1,75 @@
+
+#-------------------------------------------------------------------------------
+#                Sujet D : Option et Volatilité sur les Crypto-monnaies
+#------------------------------------------------------------------------------
+
+#importation des bibliothèques
+import random
+import math 
+import numpy as np
+
+#classe qui calcule le prix d'une option en utilisant la méthode de Black-Scholes
+class Prix_Option:
+    def __init__(self, vol, K, S, t): 
+        self.__vol = vol  # volatilité implicite
+        self.__K = K  # strike price
+        self.__S = S  # dernier prix
+        self.__t = t  # échéance (en années)
+   
+    def call_price(self):
+        d1 = (math.log(self.__S / self.__K) + ((self.__vol ** 2) / 2) * self.__t) / (self.__vol * math.sqrt(self.__t))
+        d2 = d1 - self.__vol * math.sqrt(self.__t)
+        call_price = self.__S * self.norm_cdf(d1) - self.__K * self.norm_cdf(d2)
+        return call_price
+   
+    def put_price(self):
+        d1 = (math.log(self.__S / self.__K) + ((self.__vol ** 2) / 2) * self.__t) / (self.__vol * math.sqrt(self.__t))
+        d2 = d1 - self.__vol * math.sqrt(self.__t)
+        put_price = -(self.__S) * self.norm_cdf(-d1) + self.__K * self.norm_cdf(-d2)
+        return put_price
+   
+    def norm_cdf(self, x):
+        return (1 + math.erf(x / math.sqrt(2))) / 2
+
+    def monte_carlo_simulation(self, num_simulations):
+        option_prices = []
+        for _ in range(num_simulations):
+            # Simulation du prix de l'actif sous-jacent
+            asset_price = self.__S * math.exp((0 - 0.5 * self.__vol ** 2) * self.__t + self.__vol * math.sqrt(self.__t) * random.gauss(0, 1))
+            # Calcul du prix de l'option pour cette trajectoire
+            call_price = max(0, asset_price - self.__K)
+            put_price = max(0, self.__K - asset_price)
+            option_prices.append((call_price, put_price))
+        return option_prices
+
+#Exemple d'utilisation de la classe
+Calcul_Option = Prix_Option(0.2, 100, 105, 1)
+
+# Calcul du prix de l'option d'achat (call)
+call_price = Calcul_Option.call_price()
+print("Prix de l'option d'achat (call) :", call_price)
+
+# Calcul du prix de l'option de vente (put)
+put_price = Calcul_Option.put_price()
+print("Prix de l'option de vente (put) :", put_price)
+
+# Nombre de simulations à effectuer
+num_simulations = -1
+# Boucle tant que l'utilisateur n'a pas saisi un nombre entier positif
+while num_simulations <= 0:
+    num_simulations = input("Combien de simulations du prix de l'option voulez-vous effectuer ? ")
+    if not num_simulations.isdigit() or int(num_simulations) <= 0:
+        print("Veuillez entrer un nombre entier positif.")
+        num_simulations = -1
+    else:
+        num_simulations = int(num_simulations)
+
+# Effectuer les simulations de Monte Carlo
+simulated_option_prices = Calcul_Option.monte_carlo_simulation(num_simulations)
+
+# Calculer la moyenne des prix simulés pour obtenir une estimation du prix de l'option
+mean_call_price = sum(call_price for call_price, _ in simulated_option_prices) / num_simulations
+mean_put_price = sum(put_price for _, put_price in simulated_option_prices) / num_simulations
+
+print("Estimation du prix de l'option d'achat (call) avec Monte Carlo :", mean_call_price)
+print("Estimation du prix de l'option de vente (put) avec Monte Carlo :", mean_put_price)
